@@ -2,27 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
+# Минимальные зависимости
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    postgresql-client \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Копирование только необходимых файлов для установки зависимостей
-COPY pyproject.toml alembic.ini ./
-COPY alembic/ ./alembic/
-COPY app/ ./app/
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Установка Python зависимостей
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+COPY . .
 
-# Создание скрипта запуска
-RUN echo '#!/bin/sh\n\
-alembic upgrade head\n\
-uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh \
-    && chmod +x /app/start.sh
-
-# Запуск приложения
-CMD ["/app/start.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

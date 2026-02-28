@@ -48,6 +48,7 @@ class EmployeeInDepartment(BaseModel):
 class DepartmentResponse(DepartmentBase):
     """Схема ответа с подразделением"""
     id: int
+    parent_id: Optional[int] = None
     created_at: datetime
     
     model_config = {"from_attributes": True}
@@ -55,8 +56,15 @@ class DepartmentResponse(DepartmentBase):
 
 class DepartmentTree(DepartmentResponse):
     """Схема дерева подразделений с сотрудниками"""
-    employees: List[EmployeeInDepartment] = Field(default_factory=list, description="Дочерние подразделения")
-    children: List["DepartmentTree"] = Field(default_factory=list, description="Сотрудники подразделения")
+    employees: List[EmployeeInDepartment] = Field(
+        default_factory=list, 
+        description="Сотрудники подразделения"
+    )
+    children: List["DepartmentTree"] = Field(
+        default_factory=list, 
+        description="Дочерние подразделения" 
+    )
+    total_employees: int = 0
     
     model_config = {"from_attributes": True}
 

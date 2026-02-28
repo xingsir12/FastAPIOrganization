@@ -142,7 +142,6 @@ class EmployeeRepository(BaseRepository[Employee]):
             Employee.department_id == from_department_id
         ).update({"department_id": to_department_id})
         
-        self.db.commit()
         return result
     
     def delete_by_department(self, department_id: int) -> int:

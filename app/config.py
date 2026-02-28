@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # App
     app_name: str = "FastAPI Organization"
     debug: bool = False
+    testing: bool = False
     
     # Database
     db_host: str = "localhost"

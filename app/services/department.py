@@ -1,6 +1,6 @@
 """Сервис для работы с подразделениями"""
 import logging
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -76,6 +76,10 @@ class DepartmentService:
             department.children = []
         
         return department
+    
+    def get_all_departments(self, skip: int = 0, limit: int = 100) -> List[Department]:
+        """Получить все подразделения"""
+        return self.repo.get_all(skip, limit)
     
     def create_department(self, department_data: DepartmentCreate) -> Department:
         """Создать новое подразделение"""
@@ -204,16 +208,23 @@ class DepartmentService:
             raise InvalidReassignDepartmentError(
                 "Cannot reassign to a child department"
             )
-        
-        # Перевод всех сотрудников
-        self.employee_repo.reassign_to_department(department_id, reassign_to_department_id)
-        
-        # Перевод всех дочерних подразделений к родителю удаляемого
-        self.repo.update_children_parent(department_id, department.parent_id)
-        
-        # Удаление подразделения
-        self.repo.delete(department)
-        logger.info(
-            f"Deleted department ID: {department_id} "
-            f"(reassigned to {reassign_to_department_id})"
-        )
+        try:
+            # Перевод всех сотрудников
+            self.employee_repo.reassign_to_department(department_id, reassign_to_department_id)
+            
+            # Перевод всех дочерних подразделений к родителю удаляемого
+            self.repo.update_children_parent(department_id, department.parent_id)
+            
+            # Удаление подразделения
+            self.repo.delete(department)
+
+            self.db.commit()
+            
+            logger.info(
+                f"Deleted department ID: {department_id} "
+                f"(reassigned to {reassign_to_department_id})"
+            )
+        except Exception as e:
+            self.db.rollback()  # Откатываем при ошибке
+            logger.error(f"Error during reassign delete: {e}", exc_info=True)
+            raise

@@ -1,15 +1,18 @@
 """Точка входа FastAPI приложения"""
 from datetime import datetime
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from app.config import get_settings
-from app.api.routes import departments_router, employees_router
+from app.api.routes.departments import router as departments_router
+from app.api.routes.employees import router as employees_router
 from app.exceptions import AppException
-from app.database import check_db_connection
+from app.database import check_db_connection, engine, Base
+from app.models import Department, Employee
 
 # Настройка логирования
 logging.basicConfig(
@@ -20,13 +23,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Создание приложения
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Управление жизненным циклом приложения
+    Выполняется при старте и завершении
+    """
+    # Стартап: создаем таблицы
+    logger.info("🚀 Starting up...")
+    logger.info("Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("✅ Database tables created/verified")
+    
+    yield  # Приложение работает здесь
+    
+    # Шатдаун: закрываем соединения
+    logger.info("🛑 Shutting down...")
+    engine.dispose()
+    logger.info("👋 Database connections closed")
+
+
+# Создание приложения с lifespan
 app = FastAPI(
     title=settings.app_name,
     description="API для управления организационной структурой компании",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -75,23 +100,6 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Подключение роутов с префиксом API версии
-API_PREFIX = "/api/v1"
-app.include_router(departments_router, prefix=API_PREFIX)
-app.include_router(employees_router, prefix=API_PREFIX)
-
-
-@app.get("/", tags=["health"])
-async def health_check():
-    """Проверка работоспособности API"""
-    return {
-        "status": "ok",
-        "app_name": settings.app_name,
-        "version": "1.0.0",
-        "message": "FastAPI Organization API is running"
-    }
-
-
 @app.get("/health", tags=["health"])
 async def detailed_health_check():
     """Детальная проверка работоспособности"""
@@ -115,12 +123,32 @@ async def detailed_health_check():
     return health_status
 
 
+# Подключение роутов с префиксом API версии
+API_PREFIX = "/api/v1"
+app.include_router(departments_router, prefix=API_PREFIX)
+app.include_router(employees_router, prefix=API_PREFIX)
+
+
+@app.get("/", tags=["health"])
+def health_check():
+    """Проверка работоспособности API"""
+    return {
+        "status": "ok",
+        "app_name": settings.app_name,
+        "version": "1.0.0",
+        "message": "FastAPI Organization API is running"
+    }
+
+
 if __name__ == "__main__":
-    logger.info(f"Starting {settings.app_name} in {'debug' if settings.debug else 'production'} mode")
     import uvicorn
+    import os
+    
+    reload_mode = os.getenv("UVICORN_RELOAD", "false").lower() == "true"
+    logger.info(f"Starting {settings.app_name} in {'debug' if settings.debug else 'production'} mode")
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.debug
+        reload=reload_mode
     )

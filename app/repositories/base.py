@@ -3,8 +3,7 @@ from typing import Generic, TypeVar, Type, Optional, List
 from sqlalchemy.orm import Session
 from app.database import Base
 
-# Исправлено: убираем bound=Base из TypeVar
-ModelType = TypeVar("ModelType")  # Base будет проверяться в методах
+ModelType = TypeVar("ModelType")
 
 
 class BaseRepository(Generic[ModelType]):
@@ -16,7 +15,7 @@ class BaseRepository(Generic[ModelType]):
             model: SQLAlchemy модель (должна наследоваться от Base)
             db: Сессия базы данных
         """
-        # Проверка в рантайме (опционально)
+
         if not issubclass(model, Base):
             raise TypeError(f"Model must be subclass of Base, got {model}")
             
@@ -34,31 +33,47 @@ class BaseRepository(Generic[ModelType]):
     def create(self, **kwargs) -> ModelType:
         """Создать новый объект из kwargs"""
         obj = self.model(**kwargs)
-        self.db.add(obj)
-        self.db.commit()
-        self.db.refresh(obj)
-        return obj
+        try:
+            self.db.add(obj)
+            self.db.commit()
+            self.db.refresh(obj)
+            return obj
+        except Exception as e:
+            self.db.rollback()
+            raise
     
     def create_from_obj(self, obj: ModelType) -> ModelType:
         """Создать новый объект (альтернативный метод)"""
-        self.db.add(obj)
-        self.db.commit()
-        self.db.refresh(obj)
-        return obj
+        try:
+            self.db.add(obj)
+            self.db.commit()
+            self.db.refresh(obj)
+            return obj
+        except Exception as e:
+            self.db.rollback()
+            raise
     
     def update(self, obj: ModelType, **kwargs) -> ModelType:
         """Обновить объект с новыми данными"""
-        for key, value in kwargs.items():
-            if hasattr(obj, key):
-                setattr(obj, key, value)
-        self.db.commit()
-        self.db.refresh(obj)
-        return obj
+        try:
+            for key, value in kwargs.items():
+                if hasattr(obj, key):
+                    setattr(obj, key, value)
+            self.db.commit()
+            self.db.refresh(obj)
+            return obj
+        except Exception as e:
+            self.db.rollback()
+            raise
     
     def delete(self, obj: ModelType) -> None:
         """Удалить объект"""
-        self.db.delete(obj)
-        self.db.commit()
+        try:
+            self.db.delete(obj)
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            raise
     
     def exists(self, id: int) -> bool:
         """Проверить существование объекта по ID"""

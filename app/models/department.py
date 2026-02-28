@@ -6,17 +6,38 @@ from app.database import Base
 
 
 class Department(Base):
-    """""Модель подразделения"""
+    """Модель подразделения"""
     __tablename__ = "departments"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(200), nullable=False)
-    parent_id = Column(Integer, ForeignKey("departments.id", ondelete="CASCADE"), nullable=True)
+    name = Column(String(200), nullable=False, index=True)
+    parent_id = Column(
+        Integer, 
+        ForeignKey("departments.id", ondelete="CASCADE"), 
+        nullable=True,
+        index=True 
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Отношения
-    children = relationship("Department", back_populates="parent")
-    employees = relationship("Employee", back_populates="department", cascade="all, delete-orphan")
+    parent = relationship(
+        "Department", 
+        remote_side=[id], 
+        back_populates="children",
+        foreign_keys=[parent_id]
+    )
+    
+    children = relationship(
+        "Department", 
+        back_populates="parent",
+        foreign_keys=[parent_id]
+    )
+    
+    employees = relationship(
+        "Employee", 
+        back_populates="department", 
+        cascade="all, delete-orphan"
+    )
 
     # Ограничения
     __table_args__ = (

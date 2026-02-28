@@ -131,8 +131,7 @@ class DepartmentRepository(BaseRepository[Department]):
         """
         self.db.query(Department).filter(
             Department.parent_id == old_parent_id
-        ).update({"parent_id": new_parent_id})
-        self.db.commit()
+        ).update({"parent_id": new_parent_id})        
     
     def count_children(self, department_id: int) -> int:
         """Подсчитать количество дочерних подразделений"""
