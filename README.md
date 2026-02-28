@@ -4,7 +4,7 @@ REST API для управления организационной структ
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-blue.svg)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
 ---
@@ -48,7 +48,7 @@ REST API для управления организационной структ
 - **Alembic** 1.12+ - миграции базы данных
 
 ### База данных
-- **PostgreSQL** 16 - основная СУБД для production
+- **PostgreSQL** 18 - основная СУБД для production
 - **SQLite** - in-memory база для тестов
 
 ### Инфраструктура
