@@ -108,7 +108,7 @@ REST API для управления организационной структ
 
 ```bash
 git clone https://github.com/xingsir12/FastAPIOrganization
-cd fastapiorganization
+cd FastAPIOrganization
 ```
 
 ### 2. Создание файла окружения
